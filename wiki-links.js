@@ -35,11 +35,11 @@ function getWikiLink (name) {
   return new Promise((resolve, reject) => {
     axios.get(wikiApi + name + wikiLimit)
       .then(response => {
-        const link = response.data[3][0] || ''
+        const link = response.data[3][0] || '404'
         resolve(link)
       })
       .catch(error => {
-        console.log(error)
+        console.log(error, 'ERROR')
         reject(error)
       })
   })
@@ -55,10 +55,11 @@ async function fetchWikiLinks () {
       fetched++
       console.log(fetched, name, link)
     }
-    if (fetched > 3) break // limit to 3 for now (to avoid getting blocked
+    if (fetched > 1000) break // limit to x for now (to avoid getting blocked)
   }
 
-  fs.writeFileSync('wiki-links.tsv', wikiLinks.map(name => [name, wikiLinks[name]].join('\t')).join('\n'))
+  // write to .tsv file
+  fs.writeFileSync('wiki-links.tsv', Object.keys(wikiLinks).map(name => [name, wikiLinks[name]].join('\t')).join('\n'))
 }
 
 fetchWikiLinks()
