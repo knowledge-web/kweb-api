@@ -55,11 +55,13 @@ async function fetchWikiLinks () {
       fetched++
       console.log(fetched, name, link)
     }
-    if (fetched > 1000) break // limit to x for now (to avoid getting blocked)
+    // if (fetched > 1000) break // limit to x for now (to avoid getting blocked)
   }
 
   // write to .tsv file
   fs.writeFileSync('wiki-links.tsv', Object.keys(wikiLinks).map(name => [name, wikiLinks[name]].join('\t')).join('\n'))
+  // write as .json file
+  fs.writeFileSync('wiki-links.json', JSON.stringify(wikiLinks, null, 2))
 }
 
 fetchWikiLinks()
