@@ -49,12 +49,12 @@ async function fetchWikiLinks () {
   let fetched = 0
   //iterate over wikiLinks  
   for (const name in wikiLinks) {
-    if (wikiLinks[name] === '') {
-      const link = await getWikiLink(name)
-      wikiLinks[name] = link
-      fetched++
-      console.log(fetched, name, link)
-    }
+    if (!name) continue
+    if (wikiLinks[name] !== '') continue // skip if already fetched
+    const link = await getWikiLink(name)
+    wikiLinks[name] = link
+    fetched++
+    console.log(fetched, name, link)
     // if (fetched > 1000) break // limit to x for now (to avoid getting blocked)
   }
 
