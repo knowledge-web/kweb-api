@@ -2,7 +2,7 @@ const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
 
-const brainDir = process.env.BRAIN_DIR || '../../Brain/B02'
+const brainDir = process.env.BRAIN_DIR || '../../../Brain/B02'
 const brainJsonDir = process.env.BRAIN_JSON_DIR ? process.env.BRAIN_JSON_DIR : path.join(brainDir, '../db') // ex '../Brain/db'
 
 let nodes = require(path.join(brainJsonDir, 'thoughts.json'))
@@ -24,9 +24,24 @@ if (fs.existsSync('wiki-links.tsv')) {
   })
 }
 
+let ignore = []
+if (fs.existsSync('ignore.tsv')) {
+  ignore = fs.readFileSync('ignore.tsv', 'utf8').split('\n')
+  ignore = ignore.filter(name => name !== '')
+}
+
+console.log('.tsv contains:', Object.keys(wikiLinks).length)
+console.log('names:', names.length)
+console.log('ignore:', ignore.length)
+
 names.forEach(name => { wikiLinks[name] = wikiLinks[name] || '' }) // add missing names
 // remove names that are not in nodes anymore?
-// Object.keys(wikiLinks).forEach(name => { if (!names.includes(name)) delete wikiLinks[name] })
+Object.keys(wikiLinks).forEach(name => { if (!names.includes(name)) delete wikiLinks[name] })
+Object.keys(wikiLinks).forEach(name => { // remove ignored names
+  if (ignore.includes(name)) delete wikiLinks[name]
+})
+
+console.log('names after prune:', Object.keys(wikiLinks).length)
 
 // search wiki api, example: https://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=marc+Twain&limit=1 for link
 function getWikiLink (name) {
