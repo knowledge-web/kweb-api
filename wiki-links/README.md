@@ -1,1 +1,3 @@
 This is a hack, should barely be a script this...
+
+TODO Remove and/or cleanup this mess.
