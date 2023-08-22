@@ -1,11 +1,14 @@
 const express = require('express')
 const fs = require('fs')
+const resolve = require('path').resolve
+
 const api = require('./api')
 const port = process.env.PORT || 7575
 
 const app = express()
 
-const uiDir = process.env.UI_DIR || '../kweb-ui'
+const uiDir = resolve(process.env.UI_DIR || '../kweb-ui')
+console.log(`looking for UI in "${uiDir}"`)
 // if folder exists
 if (require('fs').existsSync(uiDir)) {
   app.use('/', express.static(uiDir))
