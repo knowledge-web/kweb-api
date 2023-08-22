@@ -1,10 +1,17 @@
 const express = require('express')
+const fs = require('fs')
 const api = require('./api')
 const port = process.env.PORT || 7575
 
 const app = express()
 
-app.use('/', express.static('./ui'))
+const uiDir = process.env.UI_DIR || '../kweb-ui'
+// if folder exists
+if (require('fs').existsSync(uiDir)) {
+  app.use('/', express.static(uiDir))
+} else {
+  console.log('UI folder not found, skipping UI.')
+}
 
 app.use('/api/v0', api)
 
