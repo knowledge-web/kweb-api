@@ -297,7 +297,43 @@ api.get('/icons/:id', (req, res) => { // copied from an experiment
   res.sendFile(path.join(__dirname, '../ui', 'empty.png'))
 })
 
+function loadLinkFile (file) {
+  const raw = fs.readFileSync(file, 'utf8')
+  const lines = raw.split('\n')
+  const res = {}
+  lines.forEach(line => {
+    const [col1, col2] = line.split('\t')
+    res[col1] = col2
+  })
+  return res
+}
+
+let wikiLinks = {}
+function loadWikiLinks () { // XXX this is a mess! xD :D xD
+  const keepFile = path.join(__dirname, '..', 'wiki-links', 'keep.tsv')
+  const raw = fs.readFileSync(keepFile, 'utf8')
+  const keep = raw.split('\n').filter(l => l)
+
+  const links1 = loadLinkFile(path.join(__dirname, '..', 'wiki-links', 'wiki-links1.tsv'))
+  const links2 = loadLinkFile(path.join(__dirname, '..', 'wiki-links', 'wiki-links2.tsv'))
+
+  keep.forEach(k => {
+    wikiLinks[k] = links1[k] || links2[k] || ''
+  })
+}
+
+api.get('/wiki-links', (req, res) => {
+  res.send(wikiLinks)
+})
+
+api.get('/stats', (req, res) => {
+  const total = Object.keys(wikiLinks).length
+  const found = Object.values(wikiLinks).filter(v => v).length
+  res.send({ wikiLinks: { found, total } })
+})
+
 getNodes()
 getLinks()
+loadWikiLinks()
 
 module.exports = api
