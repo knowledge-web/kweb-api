@@ -290,7 +290,7 @@ api.get('/icons/:id', (req, res) => { // copied from an experiment
     if (fs.existsSync(file)) return res.sendFile(file)
   }
 
-  res.sendFile(path.join(__dirname, '../ui', 'empty.png'))
+  res.sendFile(path.join(__dirname, 'empty.png'))
 })
 
 function loadLinkFile (file) {
