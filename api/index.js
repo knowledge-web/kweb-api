@@ -308,7 +308,16 @@ function loadLinkFile (file) {
   return res
 }
 
-let wikiLinks = {}
+// TODO cleanup! All links in The Brain ~:
+// nodes.forEach(node => node.wikipedia = extractWikipediaURL(node.md))
+//
+// function extractWikipediaURL(markdownText) {
+//   const regex = /\[Wikipedia\]\((https:\/\/[^\)]+)\)/;
+//   const match = markdownText.match(regex);
+//   return match ? match[1] : null;
+// }
+
+const wikiLinks = {}
 function loadWikiLinks () { // XXX this is a mess! xD :D xD
   const keepFile = path.join(__dirname, '..', 'wiki-links', 'keep.tsv')
   const raw = fs.readFileSync(keepFile, 'utf8')
