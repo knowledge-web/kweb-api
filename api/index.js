@@ -119,10 +119,6 @@ function loadJson (name) {
 function getNodes () {
   return loadJson('thoughts.json')
 }
-function getNodesMap () {
-  const nodes = getNodes()
-  return mapFrom(nodes)
-}
 
 function getLinks () {
   return loadJson('links.json')
@@ -211,7 +207,7 @@ api.get('/nodes/:id?', (req, res) => {
 
   const allLinks = getLinks()
   let links = allLinks.filter(l => l.ThoughtIdA === id || l.ThoughtIdB === id)
-  const map = getNodesMap()
+  const map = mapFrom(getNodes())
 
   let nodes = {}
   nodes[id] = node
@@ -336,9 +332,16 @@ api.get('/wiki-links', (req, res) => {
 })
 
 api.get('/stats', (req, res) => {
-  const total = Object.keys(wikiLinks).length
-  const found = Object.values(wikiLinks).filter(v => v).length
-  res.send({ wikiLinks: { found, total } })
+  const wiki = {
+    total: Object.keys(wikiLinks).length,
+    found: Object.values(wikiLinks).filter(v => v).length
+  }
+  const nodes = getNodes()
+  const links = getLinks()
+  res.send({
+    nodes: nodes.length,
+    links: links.length,
+    wikiLinks: wiki })
 })
 
 getNodes()
