@@ -71,8 +71,6 @@ function extractMeta (content) {
   delete meta.born
   delete meta.died
 
-  console.log(meta.birth)
-
   return meta
 }
 exports.extractMeta = extractMeta
