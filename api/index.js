@@ -2,6 +2,8 @@ const express = require('express')
 const fs = require('fs')
 const path = require('path')
 
+const { extractMeta } = require('./extractMeta')
+
 const brainDir = process.env.BRAIN_DIR || '../Brain/B02'
 const brainJsonDir = process.env.BRAIN_JSON_DIR ? process.env.BRAIN_JSON_DIR : path.join(brainDir, '../db') // ex '../Brain/db'
 const rootNode = process.env.ROOT_NODE || '335994d7-2aff-564c-9c20-d2c362e82f8c' // "Knowledge Web" node
@@ -29,58 +31,6 @@ function getContent (id) {
     md: readFile(path.join(f, 'Notes.md')),
     html: readFile(path.join(f, 'Notes/notes.html'))
   }
-}
-
-function extractMeta (id) {
-  const meta = {}
-
-  const content = getContent(id)
-  let txt = content.md || content.html
-  if (!txt) return {}
-
-  txt = txt.replaceAll(/achievement\(s\):/ig, 'achievements:') // standardize
-  txt = txt.replaceAll(/DATE\/PLACE OF DEATH\/AGE AT DEATH:/ig, 'DATE AND PLACE OF DEATH:')
-
-  txt = txt.replaceAll(/DATE AND PLACE OF BIRTH:/ig, 'Born:')
-  txt = txt.replaceAll(/DATE AND PLACE OF DEATH:/ig, 'Died:')
-
-  const extract = [
-    'NAME',
-    'OTHER-NAME', // things only?
-    'INVENTED/BEGAN', // things only  // XXX can be one dor date & one for place ...also
-    // DATE INVENTED/BEGAN
-    // PLACE INVENTED/BEGAN
-    'ACHIEVEMENTS',
-    'NICKNAME/ALIAS',
-    'BORN',
-    'DIED',
-    'CATEGORY', // things only?
-    'DISCIPLINE',
-    'FIELD',
-    'LANGUAGE',
-    'PARENTS',
-    'SIBLINGS',
-    'SPOUSE',
-    'CHILDREN',
-    'EDUCATION',
-    'MAJOR WORK',
-    // 'LIFE AND TIMES', // FIXME always several lines...
-    // 'DEAILS', // things only? // FIXME always several lines...
-    'ASSESSMENT',
-    'EXTRA CONNECTIONS', // FIXME often several lines...
-    'ONELINER'
-  ].map(s => s.toLowerCase())
-
-  for (const key of extract) {
-    const pat = key + ':\\s+(.*)'
-    let match = (new RegExp(pat, 'ig').exec(txt) || ['', ''])[1]
-    if (!match) continue
-    match = match.split('<br />')[0]
-    match = match.split('<br/>')[0]
-    match = match.replace(/<\/?[^>]+(>|$)/g, '')
-    meta[key] = match
-  }
-  return meta
 }
 
 const fileCache = {} // { filename, mtimeMs, data }
@@ -198,6 +148,10 @@ api.get('/nodes', (req, res) => {
   res.send(list)
 })
 
+// Example response: {
+//   nodes: { <id>: { id, name, label, oneLiner, color, type, tags, birth: { date, place }, death: { date, place } }, ... },
+//   links: [{ source: id1, target: id2, name, color }, ...]
+// }
 api.get('/nodes/:id?', (req, res) => {
   let { id } = req.params
   if (id === 'root') id = rootNode
@@ -238,7 +192,7 @@ api.get('/nodes/:id?', (req, res) => {
 
     const type = { id: node.TypeId, name: map[node.TypeId] ? map[node.TypeId].Name : '' }
     const tags = getTags(id, map, allLinks)
-    const meta = extractMeta(i)
+    const meta = extractMeta(getContent(i))
     const oneLiner = node.Label || meta.oneliner || meta['one-liner'] || meta.achievements || ''
     nodes[i] = {
       id: node.Id,
@@ -249,6 +203,8 @@ api.get('/nodes/:id?', (req, res) => {
       // bgColor: toColor(node.BackgroundColor), // never used? (I saw once)
       type,
       tags,
+      birth: meta.birth || {},
+      death: meta.death || {},
       content,
       meta
     }
@@ -327,7 +283,7 @@ function loadWikiLinks () { // XXX this is a mess! xD :D xD
   })
 }
 
-api.get('/wiki-links', (req, res) => {
+api.get('/wiki-links', (req, res) => { // FIXME remove!
   res.send(wikiLinks)
 })
 
