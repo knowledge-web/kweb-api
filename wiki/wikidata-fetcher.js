@@ -1,3 +1,7 @@
+//
+// Usage: cut data.tsv -f2 | xargs -I % node wikidata-fetcher.js %
+//
+
 const axios = require('axios');
 const fs = require('fs');
 
@@ -32,7 +36,7 @@ async function fetchWikidataDetails(wikidataId) {
     }
 
     const url = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${wikidataId}&format=json&props=claims&origin=*`;
-    const response = await axios.get(url);
+    const response = await axios.get(url)
     const data = response.data;
 
     const birthDateClaim = data.entities[wikidataId].claims.P569;
@@ -52,10 +56,10 @@ async function fetchWikidataDetails(wikidataId) {
 
     const placesLived = placesLivedClaim ? await Promise.all(placesLivedClaim.map(async (claim) => {
         const placeId = claim.mainsnak.datavalue.value.id;
-        const placeName = await lookupWikidataLocation(placeId);
-        const startDate = claim.qualifiers.P580 ? formatDate(claim.qualifiers.P580[0].datavalue.value.time) : 'N/A';
-        const endDate = claim.qualifiers.P582 ? formatDate(claim.qualifiers.P582[0].datavalue.value.time) : 'N/A';
-        return { placeName, startDate, endDate };
+        const { placeName, countryName } = await lookupWikidataLocation(placeId);
+        const startDate = claim.qualifiers && claim.qualifiers.P580 ? formatDate(claim.qualifiers.P580[0].datavalue.value.time) : 'N/A';
+        const endDate = claim.qualifiers && claim.qualifiers.P582 ? formatDate(claim.qualifiers.P582[0].datavalue.value.time) : 'N/A';
+        return { placeName, countryName, startDate, endDate };
     })) : [];
 
     const details = {
@@ -72,14 +76,23 @@ async function fetchWikidataDetails(wikidataId) {
     return details;
 }
 
-module.exports = fetchWikidataDetails;
+// module.exports = fetchWikidataDetails;
 
-// fetchWikidataDetails('Q9036').then(console.log) // example (Tesla)
+// get cli argument
+const args = process.argv.slice(2)
+const id = args[0]
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const lines = fs.readFileSync('data.tsv', 'utf8').split('\n').filter((line) => line)
-lines.map(async (line) => {
-  const id = line.split('\t')[1]
-  await fetchWikidataDetails(id)
-  await delay(1000)
+fetchWikidataDetails(id).then(() => {
+    console.log('done:', id)
 })
+
+// const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+// const lines = fs.readFileSync('data.tsv', 'utf8').split('\n').filter((line) => line)
+// lines.map(async (line) => {
+//   const [link, id] = line.split('\t')
+//   if (!id) return
+// //   console.log(link, id)
+  
+//   await fetchWikidataDetails(id)
+//   await delay(1000)
+// })
