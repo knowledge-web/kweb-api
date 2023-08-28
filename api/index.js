@@ -47,11 +47,6 @@ function loadJson (name) {
   if (name === 'thoughts.json') {
     data = data.filter(t => t.ForgottenDateTime === null) // exclude removed
 
-    // exclude thoughts not in wiki-links?
-    // const wikiLinks = require('../../wiki-links.json')
-    // const wikiLinkNames = Object.keys(wikiLinks)
-    // data = data.filter(t => wikiLinkNames.includes(t.Name)) // exclude thoughts not in wiki-links
-
     // NOTE CONSIDER extractMeta could also be done here for everything...
   } else if (name === 'links.json') {
     const nodes = loadJson('thoughts.json')
@@ -74,6 +69,17 @@ function getNodes () {
 function getLinks () {
   return loadJson('links.json')
 }
+
+const wikilinks = {}
+fs.readFileSync('wiki/links.tsv', 'utf8').split('\n').filter((line) => line).map((line) => {
+  const [id, name, link] = line.split('\t')
+  wikilinks[id] = link
+})
+const wikidata = {}
+fs.readFileSync('wiki/data.tsv', 'utf8').split('\n').filter((line) => line).map((line) => {
+  const [wikipedia, wikidataId] = line.split('\t')
+  wikidata[wikipedia] = wikidataId
+})
 
 function getTags (id, map, links) { // map should be a map of all, nodes
   if (!map[id]) return []
@@ -158,6 +164,7 @@ api.get('/nodes/:id?', (req, res) => {
     const tags = getTags(id, map, allLinks)
     const meta = extractMeta(getContent(i), node)
     const oneLiner = node.Label || meta.oneliner || meta['one-liner'] || meta.achievements || ''
+    const wikipedia = meta.wikipedia || wikilinks[i] || ''
     nodes[i] = {
       id: node.Id,
       name: node.Name,
@@ -169,7 +176,8 @@ api.get('/nodes/:id?', (req, res) => {
       tags,
       birth: meta.birth || {},
       death: meta.death || {},
-      wikipedia: meta.wikipedia,
+      wikipedia,
+      wikidata: wikidata[wikipedia] || '',
       content,
       meta
     }
@@ -214,59 +222,14 @@ api.get('/icons/:id', (req, res) => { // copied from an experiment
   res.sendFile(path.join(__dirname, 'empty.png'))
 })
 
-function loadLinkFile (file) {
-  const raw = fs.readFileSync(file, 'utf8')
-  const lines = raw.split('\n')
-  const res = {}
-  lines.forEach(line => {
-    const [col1, col2] = line.split('\t')
-    res[col1] = col2
-  })
-  return res
-}
-
-// TODO cleanup! All links in The Brain ~:
-// nodes.forEach(node => node.wikipedia = extractWikipediaURL(node.md))
-//
-// function extractWikipediaURL(markdownText) {
-//   const regex = /\[Wikipedia\]\((https:\/\/[^\)]+)\)/;
-//   const match = markdownText.match(regex);
-//   return match ? match[1] : null;
-// }
-
-const wikiLinks = {}
-function loadWikiLinks () { // XXX this is a mess! xD :D xD
-  const keepFile = path.join(__dirname, '..', 'wiki-links', 'keep.tsv')
-  const raw = fs.readFileSync(keepFile, 'utf8')
-  const keep = raw.split('\n').filter(l => l)
-
-  const links1 = loadLinkFile(path.join(__dirname, '..', 'wiki-links', 'wiki-links1.tsv'))
-  const links2 = loadLinkFile(path.join(__dirname, '..', 'wiki-links', 'wiki-links2.tsv'))
-
-  keep.forEach(k => {
-    wikiLinks[k] = links1[k] || links2[k] || ''
-  })
-}
-
-api.get('/wiki-links', (req, res) => { // FIXME remove!
-  res.send(wikiLinks)
-})
-
 api.get('/stats', (req, res) => {
-  const wiki = {
-    total: Object.keys(wikiLinks).length,
-    found: Object.values(wikiLinks).filter(v => v).length
-  }
-  const nodes = getNodes()
-  const links = getLinks()
   res.send({
-    nodes: nodes.length,
-    links: links.length,
-    wikiLinks: wiki })
+    nodes: getNodes().length,
+    links: getLinks().length
+  })
 })
 
 getNodes()
 getLinks()
-loadWikiLinks()
 
 module.exports = api
