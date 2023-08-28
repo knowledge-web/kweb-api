@@ -218,8 +218,7 @@ api.get('/icons/:id', (req, res) => { // copied from an experiment
     file = fileName(node.TypeId)
     if (fs.existsSync(file)) return res.sendFile(file)
   }
-
-  res.sendFile(path.join(__dirname, 'empty.png'))
+  res.sendStatus(404)
 })
 
 api.get('/stats', (req, res) => {
