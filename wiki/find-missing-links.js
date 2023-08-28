@@ -73,7 +73,10 @@ const wikiLinks = {} // { id, name, link }
 nodes.forEach(async (node) => {
   const content = getContent(node.Id)
   const meta = extractMeta({ md: content }, node) // this is the crude extaractor
-  if (meta.wikipedia) return
+  if (meta.wikipedia) {
+    fs.appendFileSync(output, `${node.Id}\t${node.Name}\t${meta.wikipedia}\tmd\n`) // store these also
+    return
+  }
   
   meta.name = meta.name || ''
   // search wikipedia API for meta.name primarily, node.Name secundarily
