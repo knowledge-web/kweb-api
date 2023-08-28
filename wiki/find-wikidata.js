@@ -28,3 +28,12 @@ lines.map(async (line) => {
   const wikiDataID = await getWikiDataID(link)
   console.log(`${link}\t${wikiDataID}`)
 })
+
+// XXX the above returned a lot fo null values, ran tose again...h
+
+// const lines = fs.readFileSync('missing-data.tsv', 'utf8').split('\n').filter((line) => line)
+// lines.map(async (line) => {
+//   const link = line.split('\t')[0]
+//   const wikiDataID = await getWikiDataID(link)
+//   console.log(`${link}\t${wikiDataID}`)
+// })
