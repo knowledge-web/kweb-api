@@ -5,6 +5,8 @@ const path = require('path')
 const { Thoughts, Links } = require('./brain')
 const { extractMeta } = require('./extractMeta')
 
+const wikidataCache = require('../wiki/wikidata-cache.json')
+
 const brainDir = process.env.BRAIN_DIR || '../Brain/B02'
 const brainJsonDir = process.env.BRAIN_JSON_DIR ? process.env.BRAIN_JSON_DIR : path.join(brainDir, '../db') // ex '../Brain/db'
 const rootNode = process.env.ROOT_NODE || '335994d7-2aff-564c-9c20-d2c362e82f8c' // "Knowledge Web" node
@@ -165,6 +167,18 @@ api.get('/nodes/:id?', (req, res) => {
     const meta = extractMeta(getContent(i), node)
     const oneLiner = node.Label || meta.oneliner || meta['one-liner'] || meta.achievements || ''
     const wikipedia = meta.wikipedia || wikilinks[i] || ''
+    const wikidataId = wikidata[wikipedia] || ''
+    const wd = wikidataCache[wikidataId]
+
+    const birth = meta.birth || {}
+    const death = meta.death || {}
+    if (wd) {
+      birth.date = birth.date || wd.birthDate
+      birth.place = birth.place || (wd.birthPlace || []).join(', ')
+      death.date = death.date || wd.deathDate
+      death.place = death.place || (wd.deathPlace || []).join(', ')
+    }
+
     nodes[i] = {
       id: node.Id,
       name: node.Name,
@@ -174,10 +188,11 @@ api.get('/nodes/:id?', (req, res) => {
       // bgColor: toColor(node.BackgroundColor), // never used? (I saw once)
       type,
       tags,
-      birth: meta.birth || {},
-      death: meta.death || {},
+      birth,
+      death,
       wikipedia,
-      wikidata: wikidata[wikipedia] || '',
+      wikidataId,
+      wikidata: wd || {},
       content,
       meta
     }
