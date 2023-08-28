@@ -174,6 +174,7 @@ api.get('/nodes/:id?', (req, res) => {
     const death = meta.death || {}
     if (wd) {
       birth.date = birth.date || wd.birthDate
+      // console.log(wd.birthPlace, wd.deathPlace)
       birth.place = birth.place || (wd.birthPlace || []).join(', ')
       death.date = death.date || wd.deathDate
       death.place = death.place || (wd.deathPlace || []).join(', ')

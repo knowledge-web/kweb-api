@@ -11,10 +11,10 @@ async function lookupWikidataLocation(locationId) {
     const data = response.data;
     const entity = data.entities[locationId];
     const placeName = entity.labels.en.value;
-    const countryId = entity.claims.P17 ? entity.claims.P17[0].mainsnak.datavalue.value.id : 'N/A';
+    const countryId = entity.claims.P17 ? entity.claims.P17[0].mainsnak.datavalue.value.id : null;
     const countryResponse = await axios.get(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${countryId}&format=json&props=labels&languages=en&origin=*`);
     const countryData = countryResponse.data;
-    const countryName = countryData.entities[countryId] ? countryData.entities[countryId].labels.en.value : 'N/A';
+    const countryName = countryData.entities[countryId] ? countryData.entities[countryId].labels.en.value : null;
     return [ placeName, countryName ]
 }
 
@@ -39,26 +39,31 @@ async function fetchWikidataDetails(wikidataId) {
     const response = await axios.get(url)
     const data = response.data;
 
+    if (!data.entities || !data.entities[wikidataId]) {
+        console.error('Invalid Wikidata ID or no data returned from API');
+        return null;
+    }
+
     const birthDateClaim = data.entities[wikidataId].claims.P569;
     const deathDateClaim = data.entities[wikidataId].claims.P570;
     const birthPlaceClaim = data.entities[wikidataId].claims.P19;
     const deathPlaceClaim = data.entities[wikidataId].claims.P20;
     const placesLivedClaim = data.entities[wikidataId].claims.P551;
 
-    const birthDate = birthDateClaim ? formatDate(birthDateClaim[0].mainsnak.datavalue.value.time) : 'N/A';
-    const deathDate = deathDateClaim ? formatDate(deathDateClaim[0].mainsnak.datavalue.value.time) : 'N/A';
+    const birthDate = birthDateClaim ? formatDate(birthDateClaim[0].mainsnak.datavalue.value.time) : null;
+    const deathDate = deathDateClaim ? formatDate(deathDateClaim[0].mainsnak.datavalue.value.time) : null;
 
-    const birthPlaceId = birthPlaceClaim ? birthPlaceClaim[0].mainsnak.datavalue.value.id : 'N/A';
-    const deathPlaceId = deathPlaceClaim ? deathPlaceClaim[0].mainsnak.datavalue.value.id : 'N/A';
+    const birthPlaceId = birthPlaceClaim ? birthPlaceClaim[0].mainsnak.datavalue.value.id : null;
+    const deathPlaceId = deathPlaceClaim ? deathPlaceClaim[0].mainsnak.datavalue.value.id : null;
 
-    const birthPlace = birthPlaceId !== 'N/A' ? await lookupWikidataLocation(birthPlaceId) : 'N/A';
-    const deathPlace = deathPlaceId !== 'N/A' ? await lookupWikidataLocation(deathPlaceId) : 'N/A';
+    const birthPlace = birthPlaceId ? await lookupWikidataLocation(birthPlaceId) : null;
+    const deathPlace = deathPlaceId ? await lookupWikidataLocation(deathPlaceId) : null;
 
     const placesLived = placesLivedClaim ? await Promise.all(placesLivedClaim.map(async (claim) => {
         const placeId = claim.mainsnak.datavalue.value.id;
         const { placeName, countryName } = await lookupWikidataLocation(placeId);
-        const startDate = claim.qualifiers && claim.qualifiers.P580 ? formatDate(claim.qualifiers.P580[0].datavalue.value.time) : 'N/A';
-        const endDate = claim.qualifiers && claim.qualifiers.P582 ? formatDate(claim.qualifiers.P582[0].datavalue.value.time) : 'N/A';
+        const startDate = claim.qualifiers && claim.qualifiers.P580 ? formatDate(claim.qualifiers.P580[0].datavalue.value.time) : null;
+        const endDate = claim.qualifiers && claim.qualifiers.P582 ? formatDate(claim.qualifiers.P582[0].datavalue.value.time) : null;
         return { placeName, countryName, startDate, endDate };
     })) : [];
 
