@@ -156,7 +156,7 @@ api.get('/nodes/:id?', (req, res) => {
 
     const type = { id: node.TypeId, name: map[node.TypeId] ? map[node.TypeId].Name : '' }
     const tags = getTags(id, map, allLinks)
-    const meta = extractMeta(getContent(i))
+    const meta = extractMeta(getContent(i), node)
     const oneLiner = node.Label || meta.oneliner || meta['one-liner'] || meta.achievements || ''
     nodes[i] = {
       id: node.Id,
@@ -169,6 +169,7 @@ api.get('/nodes/:id?', (req, res) => {
       tags,
       birth: meta.birth || {},
       death: meta.death || {},
+      wikipedia: meta.wikipedia,
       content,
       meta
     }

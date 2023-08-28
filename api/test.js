@@ -1,3 +1,4 @@
+const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
 const { extractMeta } = require('./extractMeta')
@@ -5,6 +6,33 @@ const { Thoughts, Links } = require('./brain')
 
 const brainDir = process.env.BRAIN_DIR || '../../Brain/B02'
 const brainJsonDir = process.env.BRAIN_JSON_DIR ? process.env.BRAIN_JSON_DIR : path.join(brainDir, '../db') // ex '../Brain/db'
+
+
+async function searchWikipedia (searchQuery) {
+  if (!searchQuery) return null
+  try {
+    const params = {
+      action: 'query',
+      list: 'search',
+      srsearch: searchQuery,
+      utf8: 1,
+      format: 'json',
+      origin: '*'
+    };
+
+    const { data } = await axios.get('https://en.wikipedia.org/w/api.php', { params });
+    const results = data.query.search;
+    if (results.length > 0) {
+      const pageTitle = results[0].title;
+      return `https://en.wikipedia.org/wiki/${encodeURIComponent(pageTitle)}`;
+    }
+
+    return null
+  } catch (error) {
+    console.error('Error:', error)
+    return null
+  }
+}
 
 function getContent (id) {
   if (!/^[-0-9a-f]{36}$/.test(id)) return ''
@@ -26,10 +54,10 @@ console.log(`${nodes.length} not forgotten, "Normal" nodes`)
 
 // exclude ../wiki-links/ignore.tsv cross reference with nodes.Name
 // NOTE perhaps instead exclude nodes with tag "journey" or "meta"
-const ignore = fs.readFileSync('../wiki-links/ignore.tsv', 'utf8')
+const ignore = fs.readFileSync('ignore.tsv', 'utf8')
 const ignoreNames = ignore.split('\n').map(line => line.split('\t')[0])
 nodes = nodes.filter(n => !ignoreNames.includes(n.Name))
-console.log(`${nodes.length} not forgotten, "Normal" nodes, not in ../wiki-links/ignore.tsv`)
+console.log(`${nodes.length} not forgotten, "Normal" nodes, not in ignore.tsv`)
 
 function extractWikiLink(md, linkName) {
   // Regular expression pattern to match Markdown links with the given name
@@ -40,10 +68,21 @@ function extractWikiLink(md, linkName) {
   return ''
 }
 
-// const meta = extractMeta({ md: content }) // this is the crude extaractor
-nodes.forEach(node => {
+const output = 'wiki-links.tsv'
+const wikiLinks = {} // { id, name, link }
+nodes.forEach(async (node) => {
   const content = getContent(node.Id)
-  let link = extractWikiLink(content, 'Wikipedia') || extractWikiLink(content, node.Name)
-  link = link.replaceAll('http://', 'https://')
-  // if (link) console.log(link)
+  const meta = extractMeta({ md: content }, node) // this is the crude extaractor
+  if (meta.wikipedia) return
+  
+  meta.name = meta.name || ''
+  // search wikipedia API for meta.name primarily, node.Name secundarily
+  let link = await searchWikipedia(meta.name)
+  if (!link) link = await searchWikipedia(node.Name)
+  if (link) {
+    wikiLinks[node.Id] = { id: node.Id, name: node.Name, link: '' }
+    // add to tsv file
+    console.log(`Link: ${link}`)
+    fs.appendFileSync(output, `${node.Id}\t${node.Name}\t${link}\n`)
+  }
 })
