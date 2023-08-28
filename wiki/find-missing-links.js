@@ -1,3 +1,8 @@
+// 
+// How to run:
+// rm links.tsv && node find-missing-links.js
+// 
+
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
@@ -87,5 +92,7 @@ nodes.forEach(async (node) => {
     // add to tsv file
     console.log(`Link: ${link}`)
     fs.appendFileSync(output, `${node.Id}\t${node.Name}\t${link}\n`)
+  } else {
+    // fs.appendFileSync('still-missing.tsv', `${node.Id}\t${node.Name}\n`)
   }
 })
