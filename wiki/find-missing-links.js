@@ -1,8 +1,8 @@
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
-const { extractMeta } = require('./extractMeta')
-const { Thoughts, Links } = require('./brain')
+const { extractMeta } = require('../api/extractMeta')
+const { Thoughts, Links } = require('../api/brain')
 
 const brainDir = process.env.BRAIN_DIR || '../../Brain/B02'
 const brainJsonDir = process.env.BRAIN_JSON_DIR ? process.env.BRAIN_JSON_DIR : path.join(brainDir, '../db') // ex '../Brain/db'
@@ -68,7 +68,7 @@ function extractWikiLink(md, linkName) {
   return ''
 }
 
-const output = 'wiki-links.tsv'
+const output = 'links.tsv'
 const wikiLinks = {} // { id, name, link }
 nodes.forEach(async (node) => {
   const content = getContent(node.Id)
